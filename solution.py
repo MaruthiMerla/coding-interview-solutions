@@ -1,51 +1,61 @@
-
-
-from collections import defaultdict, deque
-
-def alien_order(words):
-   
-    if not words:
-        return ""
-    
-  
-    graph = defaultdict(set)
-    in_degree = {c: 0 for word in words for c in word}
-
- 
-    for i in range(len(words) - 1):
-        word1, word2 = words[i], words[i + 1]
-        min_len = min(len(word1), len(word2))
+class SudokuValidator:
+    def __init__(self, board, custom_zones=None):
         
+        self.board = board
+        self.custom_zones = custom_zones or []
+    
+    def is_valid(self):
+    
+        return (self._check_rows() and 
+                self._check_columns() and 
+                self._check_boxes() and 
+                self._check_custom_zones())
+    
+    def _check_rows(self):
+       
+        for row in self.board:
+            if not self._is_valid_unit(row):
+                return False
+        return True
+    
+    def _check_columns(self):
       
-        if len(word1) > len(word2) and word1[:min_len] == word2[:min_len]:
-            return ""
+        for col in zip(*self.board):
+            if not self._is_valid_unit(col):
+                return False
+        return True
+    
+    def _check_boxes(self):
+       
+        for i in (0, 3, 6):
+            for j in (0, 3, 6):
+                box = [self.board[x][y] for x in range(i, i+3) 
+                                       for y in range(j, j+3)]
+                if not self._is_valid_unit(box):
+                    return False
+        return True
+    
+    def _check_custom_zones(self):
         
-        for j in range(min_len):
-            if word1[j] != word2[j]:
-                if word2[j] not in graph[word1[j]]:
-                    graph[word1[j]].add(word2[j])
-                    in_degree[word2[j]] += 1
-                break 
+        for zone in self.custom_zones:
+            cells = [self.board[r][c] for (r, c) in zone]
+            if not self._is_valid_unit(cells):
+                return False
+        return True
     
-    
-    queue = deque([c for c in in_degree if in_degree[c] == 0])
-    order = []
-    
-    while queue:
-        if len(queue) > 1:
-          
-            return ""
+    def _is_valid_unit(self, unit):
         
-        current = queue.popleft()
-        order.append(current)
-        
-        for neighbor in graph[current]:
-            in_degree[neighbor] -= 1
-            if in_degree[neighbor] == 0:
-                queue.append(neighbor)
+        seen = set()
+        for num in unit:
+            if num == 0:
+                continue  # Skip empty cells
+            if num < 1 or num > 9 or num in seen:
+                return False
+            seen.add(num)
+        return True
+
+
+def validate_sudoku(board, custom_zones=None):
     
- 
-    if len(order) != len(in_degree):
-        return ""  
-    
-    return "".join(order)
+    validator = SudokuValidator(board, custom_zones)
+    return validator.is_valid()
